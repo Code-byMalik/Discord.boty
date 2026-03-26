@@ -167,6 +167,51 @@ async def regeln(ctx):
 
     await ctx.send(embed=embed)
 
+# ════════════════════════════════════════════════════════════
+#  MUSIK REGELN
+# ════════════════════════════════════════════════════════════
+
+@bot.command(name="MusikRegeln")
+@commands.has_permissions(manage_messages=True)
+async def musikregeln(ctx):
+    await ctx.message.delete()
+
+    embed = discord.Embed(
+        title="🎵 Hey! Ich bin MyDay – dein Musik Bot!",
+        description="Ich kann Musik in Voice-Channels abspielen! Hier sind die wichtigsten Infos:",
+        color=0x1DB954
+    )
+
+
+    embed.add_field(name="📜 Musik Regeln", value="""
+> Nur **SoundCloud** Links oder Suchen erlaubt
+> Kein Spam mit `/play` Commands
+> Respektiere die Warteschlange anderer
+> Bei Missbrauch wird der Zugang entzogen
+""", inline=False)
+
+    embed.add_field(name="🎮 Commands", value="""
+`/play <Suche/Link>` – Song abspielen
+`/skip` – Song überspringen
+`/pause` – Pausieren
+`/resume` – Fortsetzen
+`/volume 80` – Lautstärke ändern (0-200)
+`/queue` – Warteschlange anzeigen
+`/nowplaying` – Aktuellen Song anzeigen
+`/join` – Bot in deinen Channel holen
+`/leave` – Bot verlässt den Channel
+""", inline=False)
+
+    embed.add_field(name="🔗 Beispiel", value="""
+`/play Sailor Song Gigi Perez` – Suche auf SoundCloud
+`/play https://soundcloud.com/...` – Direkter Link
+""", inline=False)
+
+    embed.set_footer(text="Ich wurde gemacht von Made.byMalik ❤️")
+    embed.timestamp = datetime.now(timezone.utc)
+
+    await ctx.send(embed=embed)
+
 
 # ════════════════════════════════════════════════════════════
 #  MUSIK COMMANDS
