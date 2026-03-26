@@ -1,5 +1,0 @@
-[phases.setup]
-nixPkgs = ["ffmpeg", "opusTools", "opus"]
-
-[phases.build]
-cmds = ["pip install -U discord.py[voice] yt-dlp"]
