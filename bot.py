@@ -6,9 +6,9 @@ import asyncio
 import yt_dlp
 
 # ============================================================
-#  KONFIGURATION – Umgebungsvariablen in Railway setzen:
-#  BOT_TOKEN   = dein Bot Token
-#  ROLE_NAME   = Rolle die neue Member bekommen (Standard: Member)
+#  KONFIGURATION – Umgebungsvariablen in Railway:
+#  BOT_TOKEN  = dein Bot Token
+#  ROLE_NAME  = Rolle die neue Member bekommen (Standard: Member)
 # ============================================================
 
 ROLE_NAME = os.environ.get("ROLE_NAME", "Member")
@@ -20,8 +20,8 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 # ── Musik Queue ──────────────────────────────────────────────
-music_queues = {}  # guild_id -> list of (url, title)
-now_playing  = {}  # guild_id -> title
+music_queues = {}
+now_playing  = {}
 
 YTDL_OPTIONS = {
     "format": "bestaudio/best",
@@ -36,11 +36,10 @@ FFMPEG_OPTIONS = {
     "options": "-vn",
 }
 
-# Warn-Datenbank (im Speicher – bei Neustart zurückgesetzt)
-warns = {}  # guild_id -> { user_id -> [reason, ...] }
+warns = {}
 
 
-# ── Hilfsfunktion: Audio-URL holen ──────────────────────────
+# ── Audio Info holen ─────────────────────────────────────────
 async def get_audio_info(query: str):
     loop = asyncio.get_event_loop()
     with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
@@ -63,7 +62,11 @@ async def play_next(ctx):
     music_queues[guild_id] = queue
     now_playing[guild_id] = title
 
-    source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
+    try:
+        source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
+    except Exception as e:
+        await ctx.send(f"❌ FFmpeg Fehler: {e}")
+        return
 
     def after_playing(error):
         if error:
@@ -107,11 +110,14 @@ async def join(ctx):
     if not ctx.author.voice:
         return await ctx.send("❌ Du bist in keinem Voice-Channel!")
     channel = ctx.author.voice.channel
-    if ctx.voice_client:
-        await ctx.voice_client.move_to(channel)
-    else:
-        await channel.connect()
-    await ctx.send(f"🔊 Beigetreten: **{channel.name}**")
+    try:
+        if ctx.voice_client:
+            await ctx.voice_client.move_to(channel)
+        else:
+            await channel.connect()
+        await ctx.send(f"🔊 Beigetreten: **{channel.name}**")
+    except Exception as e:
+        await ctx.send(f"❌ Fehler beim Beitreten: `{e}`")
 
 
 @bot.command(name="leave")
@@ -129,15 +135,21 @@ async def play(ctx, *, query: str):
     if not ctx.author.voice:
         return await ctx.send("❌ Du bist in keinem Voice-Channel!")
 
+    # Voice beitreten falls nötig
     if not ctx.voice_client:
-        await ctx.author.voice.channel.connect()
+        try:
+            await ctx.author.voice.channel.connect()
+            await ctx.send(f"🔊 Verbunden mit **{ctx.author.voice.channel.name}**")
+        except Exception as e:
+            return await ctx.send(f"❌ Konnte Voice nicht beitreten: `{e}`")
 
     await ctx.send(f"🔍 Suche: `{query}`...")
 
     try:
         url, title = await get_audio_info(query)
+        await ctx.send(f"✅ Gefunden: **{title}**")
     except Exception as e:
-        return await ctx.send(f"❌ Fehler beim Laden: {e}")
+        return await ctx.send(f"❌ Fehler beim Laden: `{e}`")
 
     guild_id = ctx.guild.id
     if guild_id not in music_queues:
@@ -148,7 +160,10 @@ async def play(ctx, *, query: str):
         await ctx.send(f"➕ Zur Queue hinzugefügt: **{title}** (Position {len(music_queues[guild_id])})")
     else:
         music_queues[guild_id].insert(0, (url, title))
-        await play_next(ctx)
+        try:
+            await play_next(ctx)
+        except Exception as e:
+            await ctx.send(f"❌ Fehler beim Abspielen: `{e}`")
 
 
 @bot.command(name="skip")
@@ -213,9 +228,8 @@ async def nowplaying(ctx):
 @bot.command(name="timeout")
 @commands.has_permissions(moderate_members=True)
 async def timeout_cmd(ctx, member: discord.Member, duration: str, *, reason: str = "Kein Grund angegeben"):
-    """Beispiel: /timeout @User 10m Spam"""
     if not duration[:-1].isdigit() or duration[-1] not in ("m", "h", "d"):
-        return await ctx.send("❌ Ungültige Zeit! Beispiel: `/timeout @User 10m Spam`")
+        return await ctx.send("❌ Beispiel: `/timeout @User 10m Spam`")
 
     value = int(duration[:-1])
     unit = duration[-1]
@@ -230,7 +244,7 @@ async def timeout_cmd(ctx, member: discord.Member, duration: str, *, reason: str
     try:
         until = datetime.now(timezone.utc) + delta
         await member.timeout(until, reason=reason)
-        await ctx.send(f"🔇 **{member.display_name}** wurde für **{label}** getimeouted.\n📝 Grund: {reason}")
+        await ctx.send(f"🔇 **{member.display_name}** für **{label}** getimeouted.\n📝 Grund: {reason}")
     except discord.Forbidden:
         await ctx.send("❌ Keine Berechtigung für Timeout.")
 
@@ -273,7 +287,7 @@ async def unban(ctx, *, username: str):
         if str(entry.user) == username:
             await ctx.guild.unban(entry.user)
             return await ctx.send(f"✅ **{username}** wurde entbannt.")
-    await ctx.send(f"❌ **{username}** nicht in der Bannliste gefunden.")
+    await ctx.send(f"❌ **{username}** nicht in der Bannliste.")
 
 
 @bot.command(name="warn")
@@ -290,7 +304,7 @@ async def warn(ctx, member: discord.Member, *, reason: str = "Kein Grund angegeb
     warns[guild_id][user_id].append(reason)
     count = len(warns[guild_id][user_id])
 
-    await ctx.send(f"⚠️ **{member.display_name}** wurde verwarnt! (Verwarnungen: {count})\n📝 Grund: {reason}")
+    await ctx.send(f"⚠️ **{member.display_name}** verwarnt! (Gesamt: {count})\n📝 Grund: {reason}")
     try:
         await member.send(f"⚠️ Du wurdest auf **{ctx.guild.name}** verwarnt!\n📝 Grund: {reason}\nVerwarnungen gesamt: {count}")
     except discord.Forbidden:
@@ -387,6 +401,7 @@ async def hilfe(ctx):
     await ctx.send(embed=embed)
 
 
+# ── Error Handler ────────────────────────────────────────────
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
@@ -395,6 +410,8 @@ async def on_command_error(ctx, error):
         await ctx.send("❌ Mitglied nicht gefunden!", delete_after=5)
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("❌ Fehlende Argumente! Nutze `/hilfe`", delete_after=5)
+    elif isinstance(error, commands.CommandNotFound):
+        pass
 
 
 bot.run(os.environ.get("BOT_TOKEN"))
