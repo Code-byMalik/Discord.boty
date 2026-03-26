@@ -4,8 +4,13 @@ from datetime import datetime, timedelta, timezone
 import os
 import asyncio
 import yt_dlp
+import ctypes
+import ctypes.util
+import ctypes
+import ctypes.util
 
-# ============================================================
+
+discord.opus.load_opus(ctypes.util.find_library('opus'))
 #  KONFIGURATION – Umgebungsvariablen in Railway:
 #  BOT_TOKEN  = dein Bot Token
 #  ROLE_NAME  = Rolle die neue Member bekommen (Standard: Member)
