@@ -55,23 +55,40 @@ YTDL_OPTIONS = {
     "quiet": True,
     "default_search": "scsearch",
     "source_address": "0.0.0.0",
+    "postprocessors": [{
+        "key": "FFmpegExtractAudio",
+        "preferredcodec": "mp3",
+        "preferredquality": "192",
+    }],
 }
 
-FFMPEG_OPTIONS = {
-    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-    "options": "-vn",
-}
 
 warns = {}
 
 
 async def get_audio_info(query: str):
     loop = asyncio.get_event_loop()
-    with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
+    opts = {
+        "format": "bestaudio/best",
+        "quiet": True,
+        "default_search": "scsearch",
+        "source_address": "0.0.0.0",
+        "noplaylist": False,
+    }
+    with yt_dlp.YoutubeDL(opts) as ydl:
         info = await loop.run_in_executor(None, lambda: ydl.extract_info(query, download=False))
         if "entries" in info:
             info = info["entries"][0]
-        return info["url"], info.get("title", "Unbekannt")
+        # Direkte Audio-URL holen
+        formats = info.get("formats", [])
+        audio_url = None
+        for f in formats:
+            if f.get("acodec") != "none" and f.get("vcodec") == "none":
+                audio_url = f["url"]
+                break
+        if not audio_url:
+            audio_url = info["url"]
+        return audio_url, info.get("title", "Unbekannt")
 
 
 async def play_next(ctx):
