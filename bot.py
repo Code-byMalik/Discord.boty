@@ -152,7 +152,7 @@ async def regeln(ctx):
 
     embed = discord.Embed(
         title="📜 Serverregeln",
-        description="Willkommen auf unserem Server! Bitte lies die Regeln sorgfältig durch und halte dich daran.\nBei Verstößen können Verwarnungen, Timeouts oder Bans folgen.",
+        description="Willkommen auf Made.myDay! Bitte lies die Regeln sorgfältig durch und halte dich daran.Bei Verstößen können Verwarnungen, Timeouts oder Bans folgen.",
         color=0x2B2D31
     )
     embed.add_field(name="1️⃣ ┃ Respekt & Umgang", value="Behandle alle Mitglieder mit Respekt. Beleidigungen, Diskriminierung oder Hassrede jeglicher Art sind **nicht toleriert**.", inline=False)
@@ -160,7 +160,7 @@ async def regeln(ctx):
     embed.add_field(name="3️⃣ ┃ Kein NSFW", value="Unangemessene, explizite oder anstößige Inhalte sind auf dem gesamten Server **verboten**.", inline=False)
     embed.add_field(name="4️⃣ ┃ Kein Doxxing", value="Das Teilen privater Informationen anderer Personen wie Adresse, Telefonnummer oder Fotos ist **strengstens verboten**.", inline=False)
     embed.add_field(name="5️⃣ ┃ Keine Rat/Hack Software", value="Das Teilen oder Bewerben von Cheats, Hacks, RATs, Viren oder anderer schädlicher Software führt zum **sofortigen Ban**.", inline=False)
-    embed.add_field(name="6️⃣ ┃ Keine Kanal-Werbung", value="Das Bewerben des eigenen YouTube-, Twitch- oder sonstigen Kanals ist ohne Erlaubnis der Administration **nicht erlaubt**.", inline=False)
+    embed.add_field(name="6️⃣ ┃ Keine Kanal-Werbung", value="Das Bewerben des eigenen YouTube-, Twitch- oder sonstigen Kanals ist **nicht erlaubt**.", inline=False)
     embed.set_footer(text="Mit dem Aufenthalt auf diesem Server stimmst du diesen Regeln zu.")
     embed.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else discord.Embed.Empty)
     embed.timestamp = datetime.now(timezone.utc)
