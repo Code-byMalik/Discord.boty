@@ -6,14 +6,35 @@ import asyncio
 import yt_dlp
 import ctypes
 import ctypes.util
-import ctypes
-import ctypes.util
 
+# ── Opus laden (mehrere Pfade versuchen) ─────────────────────
+def load_opus():
+    paths = [
+        "/root/.nix-profile/lib/libopus.so.0",
+        "/nix/store/libopus.so.0",
+        "/usr/lib/libopus.so.0",
+        "/usr/lib/x86_64-linux-gnu/libopus.so.0",
+        "/usr/local/lib/libopus.so.0",
+        ctypes.util.find_library("opus"),
+    ]
+    for path in paths:
+        if path is None:
+            continue
+        try:
+            discord.opus.load_opus(path)
+            print(f"✅ Opus geladen: {path}")
+            return True
+        except Exception:
+            continue
+    print("⚠️ Opus konnte nicht geladen werden – Voice möglicherweise nicht verfügbar")
+    return False
 
-discord.opus.load_opus(ctypes.util.find_library('opus'))
-#  KONFIGURATION – Umgebungsvariablen in Railway:
-#  BOT_TOKEN  = dein Bot Token
-#  ROLE_NAME  = Rolle die neue Member bekommen (Standard: Member)
+load_opus()
+
+# ============================================================
+#  KONFIGURATION
+#  BOT_TOKEN  = dein Bot Token (Railway Variable)
+#  ROLE_NAME  = Rolle für neue Member (Railway Variable)
 # ============================================================
 
 ROLE_NAME = os.environ.get("ROLE_NAME", "Member")
@@ -70,7 +91,7 @@ async def play_next(ctx):
     try:
         source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
     except Exception as e:
-        await ctx.send(f"❌ FFmpeg Fehler: {e}")
+        await ctx.send(f"❌ FFmpeg Fehler: `{e}`")
         return
 
     def after_playing(error):
@@ -90,6 +111,7 @@ async def play_next(ctx):
 async def on_ready():
     print(f"✅ Bot ist online als {bot.user} (ID: {bot.user.id})")
     print(f"   Auto-Rolle: '{ROLE_NAME}'")
+    print(f"   Opus geladen: {discord.opus.is_loaded()}")
 
 
 @bot.event
@@ -140,7 +162,6 @@ async def play(ctx, *, query: str):
     if not ctx.author.voice:
         return await ctx.send("❌ Du bist in keinem Voice-Channel!")
 
-    # Voice beitreten falls nötig
     if not ctx.voice_client:
         try:
             await ctx.author.voice.channel.connect()
