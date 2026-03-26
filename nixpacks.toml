@@ -3,3 +3,10 @@ nixPkgs = ["ffmpeg", "opusTools", "opus"]
 
 [phases.build]
 cmds = ["pip install -U discord.py[voice] yt-dlp"]
+```
+
+Nach dem Deploy schau in die Railway Logs — du solltest sehen:
+```
+✅ Opus geladen: /pfad/zu/libopus.so.0
+✅ Bot ist online als ...
+Opus geladen: True
