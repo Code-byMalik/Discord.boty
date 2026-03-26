@@ -156,18 +156,15 @@ async def regeln(ctx):
         description="Willkommen auf unserem Server! Bitte lies die Regeln sorgfältig durch und halte dich daran.\nBei Verstößen können Verwarnungen, Timeouts oder Bans folgen.",
         color=0x2B2D31
     )
-    embed.add_field(name="1️⃣ ┃ Respekt & Umgang", value="Behandle alle Mitglieder mit Respekt. Beleidigungen, Diskriminierung oder Hassrede jeglicher Art sind **nicht toleriert**.", inline=False)
+   embed.add_field(name="1️⃣ ┃ Respekt & Umgang", value="Behandle alle Mitglieder mit Respekt. Beleidigungen, Diskriminierung oder Hassrede jeglicher Art sind **nicht toleriert**.", inline=False)
     embed.add_field(name="2️⃣ ┃ Kein Spam", value="Kein übermäßiges Senden von Nachrichten, Zeichen, Emojis oder GIFs. Halte Konversationen sauber und übersichtlich.", inline=False)
     embed.add_field(name="3️⃣ ┃ Kein NSFW", value="Unangemessene, explizite oder anstößige Inhalte sind auf dem gesamten Server **verboten**.", inline=False)
-    embed.add_field(name="4️⃣ ┃ Kein Advertising", value="Das Bewerben anderer Server, Websites oder sozialer Medien ohne Erlaubnis der Administration ist untersagt.", inline=False)
-    embed.add_field(name="5️⃣ ┃ Kein Doxxing", value="Das Teilen privater Informationen anderer Personen ist **strengstens verboten**.", inline=False)
-    embed.add_field(name="6️⃣ ┃ Richtige Kanäle nutzen", value="Nutze die Kanäle für ihren jeweiligen Zweck. Off-Topic Gespräche gehören in den dafür vorgesehenen Kanal.", inline=False)
-    embed.add_field(name="7️⃣ ┃ Keine illegalen Inhalte", value="Das Teilen von illegalen Inhalten, gecrackte Software oder Hacks führt zum **sofortigen Ban**.", inline=False)
-    embed.add_field(name="8️⃣ ┃ Mod-Entscheidungen", value="Entscheidungen des Teams sind zu akzeptieren. Beschwerden können per DM an ein Teammitglied gerichtet werden.", inline=False)
+    embed.add_field(name="4️⃣ ┃ Kein Doxxing", value="Das Teilen privater Informationen anderer Personen wie Adresse, Telefonnummer oder Fotos ist **strengstens verboten**.", inline=False)
+    embed.add_field(name="5️⃣ ┃ Keine Rat/Hack Software", value="Das Teilen oder Bewerben von Cheats, Hacks, RATs, Viren oder anderer schädlicher Software führt zum **sofortigen Ban**.", inline=False)
+    embed.add_field(name="6️⃣ ┃ Keine Kanal-Werbung", value="Das Bewerben des eigenen YouTube-, Twitch- oder sonstigen Kanals ist ohne Erlaubnis der Administration **nicht erlaubt**.", inline=False)
     embed.set_footer(text="Mit dem Aufenthalt auf diesem Server stimmst du diesen Regeln zu.")
     embed.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else discord.Embed.Empty)
     embed.timestamp = datetime.now(timezone.utc)
-
     await ctx.send(embed=embed)
 
 
