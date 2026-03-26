@@ -7,7 +7,7 @@ import yt_dlp
 import ctypes
 import ctypes.util
 
-# ── Opus laden (mehrere Pfade versuchen) ─────────────────────
+# ── Opus laden ───────────────────────────────────────────────
 def load_opus():
     paths = [
         "/root/.nix-profile/lib/libopus.so.0",
@@ -26,7 +26,7 @@ def load_opus():
             return True
         except Exception:
             continue
-    print("⚠️ Opus konnte nicht geladen werden – Voice möglicherweise nicht verfügbar")
+    print("⚠️ Opus konnte nicht geladen werden")
     return False
 
 load_opus()
@@ -45,9 +45,9 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
-# ── Musik Queue ──────────────────────────────────────────────
 music_queues = {}
 now_playing  = {}
+volumes      = {}  # guild_id -> float (0.0 - 2.0)
 
 YTDL_OPTIONS = {
     "format": "bestaudio/best",
@@ -65,7 +65,6 @@ FFMPEG_OPTIONS = {
 warns = {}
 
 
-# ── Audio Info holen ─────────────────────────────────────────
 async def get_audio_info(query: str):
     loop = asyncio.get_event_loop()
     with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
@@ -88,8 +87,13 @@ async def play_next(ctx):
     music_queues[guild_id] = queue
     now_playing[guild_id] = title
 
+    vol = volumes.get(guild_id, 1.0)
+
     try:
-        source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
+        source = discord.PCMVolumeTransformer(
+            discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS),
+            volume=vol
+        )
     except Exception as e:
         await ctx.send(f"❌ FFmpeg Fehler: `{e}`")
         return
@@ -100,7 +104,7 @@ async def play_next(ctx):
         asyncio.run_coroutine_threadsafe(play_next(ctx), bot.loop)
 
     ctx.voice_client.play(source, after=after_playing)
-    await ctx.send(f"🎵 Spielt jetzt: **{title}**")
+    await ctx.send(f"🎵 Spielt jetzt: **{title}** 🔊 {int(vol * 100)}%")
 
 
 # ════════════════════════════════════════════════════════════
@@ -126,6 +130,37 @@ async def on_member_join(member: discord.Member):
         print(f"✅ Rolle '{role.name}' → {member}")
     except discord.Forbidden:
         print("❌ Keine Berechtigung für Auto-Rolle.")
+
+
+# ════════════════════════════════════════════════════════════
+#  REGELN COMMAND
+# ════════════════════════════════════════════════════════════
+
+@bot.command(name="regeln")
+@commands.has_permissions(manage_messages=True)
+async def regeln(ctx):
+    await ctx.message.delete()
+
+    embed = discord.Embed(
+        title="📜 Serverregeln",
+        description="Willkommen auf unserem Server! Bitte lies die Regeln sorgfältig durch und halte dich daran.\nBei Verstößen können Verwarnungen, Timeouts oder Bans folgen.",
+        color=0x2B2D31
+    )
+
+    embed.add_field(name="1️⃣ ┃ Respekt & Umgang", value="Behandle alle Mitglieder mit Respekt. Beleidigungen, Diskriminierung oder Hassrede jeglicher Art sind **nicht toleriert**.", inline=False)
+    embed.add_field(name="2️⃣ ┃ Kein Spam", value="Kein übermäßiges Senden von Nachrichten, Zeichen, Emojis oder GIFs. Halte Konversationen sauber und übersichtlich.", inline=False)
+    embed.add_field(name="3️⃣ ┃ Kein NSFW", value="Unangemessene, explizite oder anstößige Inhalte sind auf dem gesamten Server **verboten**.", inline=False)
+    embed.add_field(name="4️⃣ ┃ Kein Advertising", value="Das Bewerben anderer Server, Websites oder sozialer Medien ohne Erlaubnis der Administration ist untersagt.", inline=False)
+    embed.add_field(name="5️⃣ ┃ Kein Doxxing", value="Das Teilen privater Informationen anderer Personen ist **strengstens verboten**.", inline=False)
+    embed.add_field(name="6️⃣ ┃ Richtige Kanäle nutzen", value="Nutze die Kanäle für ihren jeweiligen Zweck. Off-Topic Gespräche gehören in den dafür vorgesehenen Kanal.", inline=False)
+    embed.add_field(name="7️⃣ ┃ Keine illegalen Inhalte", value="Das Teilen von illegalen Inhalten, gecrackte Software oder Hacks führt zum **sofortigen Ban**.", inline=False)
+    embed.add_field(name="8️⃣ ┃ Mod-Entscheidungen", value="Entscheidungen des Teams sind zu akzeptieren. Beschwerden können per DM an ein Teammitglied gerichtet werden.", inline=False)
+
+    embed.set_footer(text="Mit dem Aufenthalt auf diesem Server stimmst du diesen Regeln zu.")
+    embed.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else discord.Embed.Empty)
+    embed.timestamp = datetime.now(timezone.utc)
+
+    await ctx.send(embed=embed)
 
 
 # ════════════════════════════════════════════════════════════
@@ -219,6 +254,29 @@ async def resume(ctx):
         await ctx.send("❌ Nichts pausiert.")
 
 
+@bot.command(name="volume")
+async def volume(ctx, vol: int):
+    """Lautstärke ändern. Beispiel: /volume 80 (0-200)"""
+    if not ctx.voice_client or not ctx.voice_client.is_playing():
+        return await ctx.send("❌ Es wird gerade nichts abgespielt.")
+    if not 0 <= vol <= 200:
+        return await ctx.send("❌ Lautstärke muss zwischen **0** und **200** liegen!")
+
+    volumes[ctx.guild.id] = vol / 100
+    ctx.voice_client.source.volume = vol / 100
+
+    if vol == 0:
+        emoji = "🔇"
+    elif vol <= 50:
+        emoji = "🔈"
+    elif vol <= 100:
+        emoji = "🔉"
+    else:
+        emoji = "🔊"
+
+    await ctx.send(f"{emoji} Lautstärke auf **{vol}%** gesetzt.")
+
+
 @bot.command(name="queue")
 async def queue_cmd(ctx):
     guild_id = ctx.guild.id
@@ -230,7 +288,8 @@ async def queue_cmd(ctx):
 
     msg = ""
     if current:
-        msg += f"🎵 **Jetzt:** {current}\n\n"
+        vol = int(volumes.get(guild_id, 1.0) * 100)
+        msg += f"🎵 **Jetzt:** {current} 🔊 {vol}%\n\n"
     if queue:
         msg += "📋 **Queue:**\n"
         for i, (_, title) in enumerate(queue, 1):
@@ -242,7 +301,8 @@ async def queue_cmd(ctx):
 async def nowplaying(ctx):
     current = now_playing.get(ctx.guild.id)
     if current:
-        await ctx.send(f"🎵 Spielt gerade: **{current}**")
+        vol = int(volumes.get(ctx.guild.id, 1.0) * 100)
+        await ctx.send(f"🎵 Spielt gerade: **{current}** 🔊 {vol}%")
     else:
         await ctx.send("❌ Es wird gerade nichts abgespielt.")
 
@@ -408,6 +468,7 @@ async def hilfe(ctx):
 `/skip` – Song überspringen
 `/pause` – Pausieren
 `/resume` – Fortsetzen
+`/volume 80` – Lautstärke setzen (0-200)
 `/queue` – Queue anzeigen
 `/nowplaying` – Aktueller Song
 `/join` – Voice beitreten
@@ -423,6 +484,7 @@ async def hilfe(ctx):
 `/warnings @User` – Verwarnungen anzeigen
 `/clearwarns @User` – Verwarnungen löschen
 `/clear 2h` – Chat löschen
+`/regeln` – Regeln posten
 """, inline=False)
     await ctx.send(embed=embed)
 
