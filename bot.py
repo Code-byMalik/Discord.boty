@@ -47,39 +47,32 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 
 music_queues = {}
 now_playing  = {}
-volumes      = {}  # guild_id -> float (0.0 - 2.0)
+volumes      = {}
 
-YTDL_OPTIONS = {
+YTDL_OPTS = {
     "format": "bestaudio/best",
-    "noplaylist": False,
     "quiet": True,
     "default_search": "scsearch",
     "source_address": "0.0.0.0",
-    "postprocessors": [{
-        "key": "FFmpegExtractAudio",
-        "preferredcodec": "mp3",
-        "preferredquality": "192",
-    }],
+    "noplaylist": False,
 }
 
+FFMPEG_OPTIONS = {
+    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "options": "-vn",
+}
 
 warns = {}
 
 
+# ── Audio Info holen ─────────────────────────────────────────
 async def get_audio_info(query: str):
     loop = asyncio.get_event_loop()
-    opts = {
-        "format": "bestaudio/best",
-        "quiet": True,
-        "default_search": "scsearch",
-        "source_address": "0.0.0.0",
-        "noplaylist": False,
-    }
-    with yt_dlp.YoutubeDL(opts) as ydl:
+    with yt_dlp.YoutubeDL(YTDL_OPTS) as ydl:
         info = await loop.run_in_executor(None, lambda: ydl.extract_info(query, download=False))
         if "entries" in info:
             info = info["entries"][0]
-        # Direkte Audio-URL holen
+        # Beste Audio-URL direkt holen
         formats = info.get("formats", [])
         audio_url = None
         for f in formats:
@@ -163,7 +156,6 @@ async def regeln(ctx):
         description="Willkommen auf unserem Server! Bitte lies die Regeln sorgfältig durch und halte dich daran.\nBei Verstößen können Verwarnungen, Timeouts oder Bans folgen.",
         color=0x2B2D31
     )
-
     embed.add_field(name="1️⃣ ┃ Respekt & Umgang", value="Behandle alle Mitglieder mit Respekt. Beleidigungen, Diskriminierung oder Hassrede jeglicher Art sind **nicht toleriert**.", inline=False)
     embed.add_field(name="2️⃣ ┃ Kein Spam", value="Kein übermäßiges Senden von Nachrichten, Zeichen, Emojis oder GIFs. Halte Konversationen sauber und übersichtlich.", inline=False)
     embed.add_field(name="3️⃣ ┃ Kein NSFW", value="Unangemessene, explizite oder anstößige Inhalte sind auf dem gesamten Server **verboten**.", inline=False)
@@ -172,7 +164,6 @@ async def regeln(ctx):
     embed.add_field(name="6️⃣ ┃ Richtige Kanäle nutzen", value="Nutze die Kanäle für ihren jeweiligen Zweck. Off-Topic Gespräche gehören in den dafür vorgesehenen Kanal.", inline=False)
     embed.add_field(name="7️⃣ ┃ Keine illegalen Inhalte", value="Das Teilen von illegalen Inhalten, gecrackte Software oder Hacks führt zum **sofortigen Ban**.", inline=False)
     embed.add_field(name="8️⃣ ┃ Mod-Entscheidungen", value="Entscheidungen des Teams sind zu akzeptieren. Beschwerden können per DM an ein Teammitglied gerichtet werden.", inline=False)
-
     embed.set_footer(text="Mit dem Aufenthalt auf diesem Server stimmst du diesen Regeln zu.")
     embed.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else discord.Embed.Empty)
     embed.timestamp = datetime.now(timezone.utc)
@@ -273,7 +264,6 @@ async def resume(ctx):
 
 @bot.command(name="volume")
 async def volume(ctx, vol: int):
-    """Lautstärke ändern. Beispiel: /volume 80 (0-200)"""
     if not ctx.voice_client or not ctx.voice_client.is_playing():
         return await ctx.send("❌ Es wird gerade nichts abgespielt.")
     if not 0 <= vol <= 200:
@@ -485,7 +475,7 @@ async def hilfe(ctx):
 `/skip` – Song überspringen
 `/pause` – Pausieren
 `/resume` – Fortsetzen
-`/volume 80` – Lautstärke setzen (0-200)
+`/volume 80` – Lautstärke (0-200)
 `/queue` – Queue anzeigen
 `/nowplaying` – Aktueller Song
 `/join` – Voice beitreten
