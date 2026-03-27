@@ -195,7 +195,7 @@ async def musikregeln(ctx):
 `/skip` – Song überspringen
 `/pause` – Pausieren
 `/resume` – Fortsetzen
-`/volume 80` – Lautstärke ändern (0-200)
+`/volume 80` – Lautstärke ändern (0-2000)
 `/queue` – Warteschlange anzeigen
 `/nowplaying` – Aktuellen Song anzeigen
 `/join` – Bot in deinen Channel holen
@@ -308,8 +308,8 @@ async def resume(ctx):
 async def volume(ctx, vol: int):
     if not ctx.voice_client or not ctx.voice_client.is_playing():
         return await ctx.send("❌ Es wird gerade nichts abgespielt.")
-    if not 0 <= vol <= 200:
-        return await ctx.send("❌ Lautstärke muss zwischen **0** und **200** liegen!")
+    if not 0 <= vol <= 2000:
+        return await ctx.send("❌ Lautstärke muss zwischen **0** und **2000** liegen!")
 
     volumes[ctx.guild.id] = vol / 100
     ctx.voice_client.source.volume = vol / 100
@@ -517,7 +517,7 @@ async def hilfe(ctx):
 `/skip` – Song überspringen
 `/pause` – Pausieren
 `/resume` – Fortsetzen
-`/volume 80` – Lautstärke (0-200)
+`/volume 80` – Lautstärke (0-2000)
 `/queue` – Queue anzeigen
 `/nowplaying` – Aktueller Song
 `/join` – Voice beitreten
